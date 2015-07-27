@@ -2,11 +2,88 @@
 using System.Reflection;
 
 // EasyNetQ version number: <major>.<minor>.<non-breaking-feature>.<build>
-[assembly: AssemblyVersion("0.28.4.0")]
+[assembly: AssemblyVersion("0.50.1.0")]
 [assembly: CLSCompliant(true)]
 
 // Note: until version 1.0 expect breaking changes on 0.X versions.
-
+// 0.50.1.0 Fix type in Extensions
+// 0.50.0.0 Updated to RabbitMQ.Client 3.5.3
+// 0.49.3.0 Polymorphic publish now works with Scheduler.Mongo
+// 0.49.2.0 Fix subscription for events if queues were created in previous versions
+// 0.49.1.0 Priority queue support
+// 0.49.0.0 Updated to RabbitMQ.Client 3.5.1
+// 0.48.1.0 Fix unhandled exception
+// 0.48.0.0 Refactor IScheduler and its implementations
+// 0.47.10.0 RabbitHutch.CreateBus overloads
+// 0.47.9.0 TypeNameSerializer now uses a ConcurrentDictionary to store se/deserialization results.
+// 0.47.8.0 Rpc.Respond will validate serialized length of TResponse upon method call to prevent silent exception when executing responder.
+// 0.47.7.0 Validating ConnectionConfiguration in lowest level method of RabbitHutch.
+// 0.47.6.0 AtLeastOneWithDefault -> DefaultIfEmpty
+// 0.47.5.0 PersistentChannel update preventing race condition following PersistentConnection quick connection/disconnection.
+// 0.47.4.0 Refactor MessageDeliveryModeStrategy
+// 0.47.3.0 Using MessageDeliveryMode instead of hardcoded 1/2 and Exchange/ExchangeType update.
+// 0.47.2.0 Logging is disabled by default.
+// 0.47.1.0 Bug fix, when the message broker connection is lost is not possible any more publish a message on queue EasyNetQ_Default_Error_Queue.
+// 0.47.0.0 It's now required to call PersistentConnection.Initialize() to bootstrap a PersistentConnection and make it start attempting to connect.
+// 0.46.1.0 Fix NullReferenceException on Serialize
+// 0.46.0.0 Implementation of AdvancedBusEventHandlers and events are gone from IBus.
+// 0.45.0.0 IBus Subscription methods now return an ISubscriptionResult and IAdvancedBus exposes IConventions.
+// 0.44.3.0 RabbitHutch.CreateBus overload
+// 0.44.2.0 Bug fix, when a subscriptionId is null the queue name end with '_'
+// 0.44.1.0 SSL enabled cluster support - Added SSL options per host configuration
+// 0.44.0.0 Added Action<IConsumerConfiguration> overloads to Receive() on IBus, ISendReceive, and their implementations
+// 0.43.1.0 Management Client fix for URI slash escaping in .NET 4.0 with https connection.
+// 0.43.0.0 Use ILRepack to internally merge Newtonsoft.Json in ManagementClient, default WebRequest.KeepAlive to false to resolve spurious 'the request was aborted: the request was canceled' exceptions
+// 0.42.0.0 Switched from local to UTC datetimes.
+// 0.41.0.0 Dynamic removal 
+// 0.40.6.0 Added parameter to set the 'x-dead-letter-routing-key' argument when declaring a queue.
+// 0.40.5.0 Preconditions will check for blank argument name / exception message only when needed
+// 0.40.4.0 Bug fix of Rpc
+// 0.40.3.0 Upgrade to RabbitMQ.Client 3.4.3
+// 0.40.2.0 ReflectionHelpers improvement
+// 0.40.1.0 Fix concurrent bugs in DefaultServiceProvider
+// 0.40.0.0 Exclusive Consumer
+// 0.39.6.0 Fix enable recreating of exchangeTask if it is faulted
+// 0.39.5.0 Fix concurrent bugs in EventBus
+// 0.39.4.0 ConsumerDispatcher's dispatching thread shall not die due to single action failure.
+// 0.39.3.0 SendAsync should return Task
+// 0.39.2.0 Removed Immutable Packages and replaced IEventBus.cs with previous version to prevent cs1685 compiler warnings
+// 0.39.1.0 Fix multiple queue's creation. Bug fix
+// 0.39.0.0 Added SendAsync
+// 0.38.2.0 RandomHostSelectionStrategy is default hosts selection strategy
+// 0.38.1.0 Configuration of rpc timeout  
+// 0.38.0.0 ILMerging to remove the potentially conflicting dependency on System.Collections.Immutable.Net40 from the NuGet
+// 0.37.3.0 Remove POCO interfaces IConnectionConfiguration and IHostConfiguration
+// 0.37.2.0 Upgrade to RabbitMQ.Client 3.4.0
+// 0.37.1.0 AutoSubscriber Subscribe and SubscribeAsync support loading consumers from an array of types
+// 0.37.0.0 Added MessageCount method to AdvancedBus
+// 0.36.5.0 Make DefaultConsumerErrorStrategy thread-safe
+// 0.36.4.0 Fixed EasyNetQ.nuspec by adding the dependency on System.Collections.Immutable.Net40
+// 0.36.3.0 PublishedMessageEvent, DeliveredMessageEvent
+// 0.36.2.0 Fixed threading issue in EventBus
+// 0.36.1.0 Updated Json.Net to the latest version
+// 0.36.0.0 Support for blocked connection notifications
+// 0.35.5.0 Basic implementation of produce-consumer interception
+// 0.35.4.0 Future publish refactor: introduced IScheduler interface.
+// 0.35.3.0 Infinite timeout. (set timeout to 0)
+// 0.35.2.0 Attributes caching + Exception handling around responder function, to avoid timeout on the client when the exception is thrown before the task is returned.
+// 0.35.1.0 Configure request for ManagementClient
+// 0.35.0.0 Use ILRepack to internally merge Newtonsoft.Json
+// 0.34.0.0 basic.get added to advanced bus: IAdvancedBus.Get<T>(IQueue queue)
+// 0.33.2.0 x-expires now can be configured while subscribe, using the fluent interface method x => x.WithExpires(int)
+// 0.33.1.0 NinjectAdapter cannot handle first-to-register behavior, Ninject cannot handle registration of Func<>. Added ICorrelationIdGenerationStrategy, and DefaultCorrelationIdGenerationStrategy.
+// 0.33.0.0 x-cancel-on-ha-failover is now false by default and can be configured with the cancelOnHaFailover connection string value and with the fluent interface method WithCancelOnHaFailover. If you set on connection string, it can't be overridden by the fluent method, instead if you leave it disabled from connection string, you can manage the behavior per consumer with the fluent interface. Possible breaking change for whom they was expecting a consumer shutdown after a cluster HA fail-over, now the consumer will be redeclared and continue to consume.
+// 0.32.3.0 RabbitMQ.Client version 3.3.2
+// 0.32.2.0 Updated JSON.Net to the latest version
+// 0.32.1.0 Add support for message versioning
+// 0.32.0.0 Handle Consumer Task Cancellation
+// 0.31.1.0 Added QueueAttribute for controling queue / exchange names.
+// 0.31.0.0 Added FuturePublish based on deadlettering.
+// 0.30.2.0 Upgrade to RabbitMQ.Client 3.3.0
+// 0.30.1.0 Added FuturePublishAsync
+// 0.30.0.0 Added CancelFuturePublish functionality
+// 0.29.0.0 Support returned immediate/mandatory messages
+// 0.28.5.0 Added ChangeUserPassword method to the Management Client. Added the 'policymaker' to the allowed user tags.
 // 0.28.4.0 Support for queue name that contains plus char (+) when using Management Client.
 // 0.28.3.0 RabbitMQ.Client version 3.2.4
 // 0.28.1.0 Made Send method respect the PersistentMessages configuration option

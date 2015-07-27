@@ -26,7 +26,7 @@ namespace EasyNetQ.Tests
         {
             var configuration = new ConnectionConfiguration
             {
-                Hosts = new List<IHostConfiguration>
+                Hosts = new List<HostConfiguration>
                 {
                     new HostConfiguration { Host = "localhost", Port = 5672 }
                 },
@@ -37,7 +37,7 @@ namespace EasyNetQ.Tests
             configuration.Validate();
 
             var typeNameSerializer = new TypeNameSerializer();
-            connectionFactory = new ConnectionFactoryWrapper(configuration, new DefaultClusterHostSelectionStrategy<ConnectionFactoryInfo>());
+            connectionFactory = new ConnectionFactoryWrapper(configuration, new RandomClusterHostSelectionStrategy<ConnectionFactoryInfo>());
             serializer = new JsonSerializer(typeNameSerializer);
             conventions = new Conventions(typeNameSerializer);
             consumerErrorStrategy = new DefaultConsumerErrorStrategy(
@@ -93,7 +93,7 @@ namespace EasyNetQ.Tests
                     message.Exchange.ShouldEqual(context.Info.Exchange);
                     message.Message.ShouldEqual(originalMessage);
                     message.Exception.ShouldEqual("System.Exception: I just threw!");
-                    message.DateTime.Date.ShouldEqual(DateTime.Now.Date);
+                    message.DateTime.Date.ShouldEqual(DateTime.UtcNow.Date);
                     message.BasicProperties.CorrelationId.ShouldEqual(context.Properties.CorrelationId);
                     message.BasicProperties.AppId.ShouldEqual(context.Properties.AppId);
                 }

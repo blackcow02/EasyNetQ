@@ -11,7 +11,7 @@ namespace EasyNetQ.Producer
     {
         private readonly IPersistentConnection connection;
         private readonly IEasyNetQLogger logger;
-        private readonly IConnectionConfiguration configuration;
+        private readonly ConnectionConfiguration configuration;
         private readonly IEventBus eventBus;
 
         private IModel channel;
@@ -20,7 +20,7 @@ namespace EasyNetQ.Producer
         public PersistentChannel(
             IPersistentConnection connection, 
             IEasyNetQLogger logger, 
-            IConnectionConfiguration configuration,
+            ConnectionConfiguration configuration,
             IEventBus eventBus)
         {
             Preconditions.CheckNotNull(connection, "connection");
@@ -54,10 +54,20 @@ namespace EasyNetQ.Producer
 
         private void ConnectionOnConnected(ConnectionCreatedEvent @event)
         {
-            OpenChannel();
+            if (connection.IsConnected)
+            {
+                try
+                {
+                    OpenChannel();
+                }
+                catch (OperationInterruptedException)
+                { }
+                catch (EasyNetQException)
+                { }
+            }
         }
 
-        public IModel Channel
+        private IModel Channel
         {
             get
             {
@@ -80,7 +90,7 @@ namespace EasyNetQ.Producer
         public void InvokeChannelAction(Action<IModel> channelAction)
         {
             Preconditions.CheckNotNull(channelAction, "channelAction");
-            InvokeChannelActionInternal(channelAction, DateTime.Now);
+            InvokeChannelActionInternal(channelAction, DateTime.UtcNow);
         }
 
         private void InvokeChannelActionInternal(Action<IModel> channelAction, DateTime startTime)
@@ -122,7 +132,6 @@ namespace EasyNetQ.Producer
                 WaitForReconnectionOrTimeout(startTime);
                 InvokeChannelActionInternal(channelAction, startTime);
             }
-
         }
 
         private void WaitForReconnectionOrTimeout(DateTime startTime)
@@ -147,7 +156,7 @@ namespace EasyNetQ.Producer
 
         private bool IsTimedOut(DateTime startTime)
         {
-            return startTime.AddSeconds(configuration.Timeout) < DateTime.Now;
+            return !configuration.Timeout.Equals(0) && startTime.AddSeconds(configuration.Timeout) < DateTime.UtcNow;
         }
 
         public void Dispose()

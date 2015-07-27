@@ -10,12 +10,12 @@ namespace EasyNetQ.NonGeneric
 {
     public static class NonGenericExtensions
     {
-        public static IDisposable Subscribe(this IBus bus, Type messageType, string subscriptionId, Action<object> onMessage)
+        public static ISubscriptionResult Subscribe(this IBus bus, Type messageType, string subscriptionId, Action<object> onMessage)
         {
             return Subscribe(bus, messageType, subscriptionId, onMessage, configuration => { });
         }
 
-        public static IDisposable Subscribe(
+        public static ISubscriptionResult Subscribe(
             this IBus bus,
             Type messageType,
             string subscriptionId,
@@ -29,7 +29,7 @@ namespace EasyNetQ.NonGeneric
             return SubscribeAsync(bus, messageType, subscriptionId, asyncOnMessage, configure);
         }
 
-        public static IDisposable SubscribeAsync(
+        public static ISubscriptionResult SubscribeAsync(
             this IBus bus,
             Type messageType,
             string subscriptionId,
@@ -38,7 +38,7 @@ namespace EasyNetQ.NonGeneric
             return SubscribeAsync(bus, messageType, subscriptionId, onMessage, configuration => { });
         }
 
-        public static IDisposable SubscribeAsync(
+        public static ISubscriptionResult SubscribeAsync(
             this IBus bus,
             Type messageType,
             string subscriptionId,
@@ -61,7 +61,7 @@ namespace EasyNetQ.NonGeneric
             }
 
             var subscribeMethod = subscribeMethodOpen.MakeGenericMethod(messageType);
-            return (IDisposable)subscribeMethod.Invoke(bus, new object[] { subscriptionId, onMessage, configure });
+            return (ISubscriptionResult)subscribeMethod.Invoke(bus, new object[] { subscriptionId, onMessage, configure });
         } 
 
         public static void Publish(this IBus bus, Type messageType, object message)
@@ -89,12 +89,11 @@ namespace EasyNetQ.NonGeneric
             
             var advancedBus = bus.Advanced.Container.Resolve<IAdvancedBus>();
             var publishExchangeDeclareStrategy = bus.Advanced.Container.Resolve<IPublishExchangeDeclareStrategy>();
-            var connectionConfiguration = bus.Advanced.Container.Resolve<IConnectionConfiguration>();
+            var messageDeliveryModeStrategy = bus.Advanced.Container.Resolve<IMessageDeliveryModeStrategy>();
             
             var exchange = publishExchangeDeclareStrategy.DeclareExchange(advancedBus, messageType, ExchangeType.Topic);
-            var easyNetQMessage = Message.CreateInstance(messageType, message);
-
-            easyNetQMessage.Properties.DeliveryMode = (byte)(connectionConfiguration.PersistentMessages ? 2 : 1);
+            var easyNetQMessage = MessageFactory.CreateInstance(messageType, message);
+            easyNetQMessage.Properties.DeliveryMode = messageDeliveryModeStrategy.GetDeliveryMode(messageType);
 
             return advancedBus.PublishAsync(exchange, topic, false, false, easyNetQMessage);
         }

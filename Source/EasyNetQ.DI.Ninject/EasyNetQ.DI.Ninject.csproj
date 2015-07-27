@@ -40,7 +40,6 @@
     </Reference>
     <Reference Include="System" />
     <Reference Include="System.Core" />
-    <Reference Include="Microsoft.CSharp" />
   </ItemGroup>
   <ItemGroup>
     <Compile Include="..\Version.cs">
@@ -48,6 +47,7 @@
     </Compile>
     <Compile Include="InjectionExtensions.cs" />
     <Compile Include="NinjectAdapter.cs" />
+    <Compile Include="NinjectMessageDispatcher.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
   <ItemGroup>

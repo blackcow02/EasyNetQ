@@ -11,11 +11,11 @@ namespace EasyNetQ.Tests.ConnectionString
     [TestFixture]
     public class ConnectionStringParserTests
     {
-        private IConnectionStringParser connectionStringParser;
+        private ConnectionStringParser connectionStringParser;
 
         private const string connectionString =
             "virtualHost=Copa;username=Copa;host=192.168.1.1;password=abc_xyz;port=12345;" + 
-            "requestedHeartbeat=3;prefetchcount=2;timeout=12;publisherConfirms=true";
+            "requestedHeartbeat=3;prefetchcount=2;timeout=12;publisherConfirms=true;cancelOnHaFailover=true";
 
         [SetUp]
         public void SetUp()
@@ -37,6 +37,7 @@ namespace EasyNetQ.Tests.ConnectionString
             connectionConfiguration.PrefetchCount.ShouldEqual(2);
             connectionConfiguration.Timeout.ShouldEqual(12);
             connectionConfiguration.PublisherConfirms.ShouldBeTrue();
+            connectionConfiguration.CancelOnHaFailover.ShouldBeTrue();
         }
 
         [Test]
@@ -78,7 +79,7 @@ namespace EasyNetQ.Tests.ConnectionString
         [TestCaseSource("AppendixAExamples")]
         public void Should_parse_Examples(AmqpSpecification spec)
         {
-            IConnectionConfiguration connectionConfiguration = connectionStringParser.Parse("" + spec.amqpUri);
+            ConnectionConfiguration connectionConfiguration = connectionStringParser.Parse("" + spec.amqpUri);
 
             connectionConfiguration.Port.ShouldEqual(spec.port);
             connectionConfiguration.AMQPConnectionString.ShouldEqual(spec.amqpUri);
@@ -99,8 +100,7 @@ namespace EasyNetQ.Tests.ConnectionString
         [Test]
         public void Should_UsePort_From_ConnectionString()
         {
-            IConnectionConfiguration connectionConfiguration = connectionStringParser.Parse("amqp=amqp://host/;port=123");
-
+            ConnectionConfiguration connectionConfiguration = connectionStringParser.Parse("amqp=amqp://host/;port=123");
 
             connectionConfiguration.Port.ShouldEqual(123);
         }
@@ -108,7 +108,7 @@ namespace EasyNetQ.Tests.ConnectionString
         [Test]
         public void Should_NotUsePort_From_ConnectionString()
         {
-            IConnectionConfiguration connectionConfiguration = connectionStringParser.Parse("amqp=amqp://host:1234/");
+            ConnectionConfiguration connectionConfiguration = connectionStringParser.Parse("amqp=amqp://host:1234/");
 
             connectionConfiguration.Port.ShouldEqual(1234);
         }
@@ -116,12 +116,11 @@ namespace EasyNetQ.Tests.ConnectionString
         [Test]
         public void Should_AddHost_ToHosts()
         {
-            IConnectionConfiguration connectionConfiguration = connectionStringParser.Parse("host=local;amqp=amqp://amqphost:1234/");
+            ConnectionConfiguration connectionConfiguration = connectionStringParser.Parse("host=local;amqp=amqp://amqphost:1234/");
 
             connectionConfiguration.Hosts.Count().ShouldEqual(2);
             connectionConfiguration.Hosts.First().Host.ShouldEqual("local");
             connectionConfiguration.Hosts.Last().Host.ShouldEqual("amqphost");
-
         }
 
         public class AmqpSpecification

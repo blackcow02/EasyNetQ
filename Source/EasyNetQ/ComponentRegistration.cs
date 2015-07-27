@@ -1,7 +1,8 @@
-﻿using System;
-using EasyNetQ.Consumer;
+﻿using EasyNetQ.Consumer;
+using EasyNetQ.Interception;
 using EasyNetQ.Loggers;
 using EasyNetQ.Producer;
+using EasyNetQ.Scheduling;
 
 namespace EasyNetQ
 {
@@ -18,17 +19,21 @@ namespace EasyNetQ
 
             // default service registration
             container
-                .Register(_ => container)
-                .Register<IEasyNetQLogger, ConsoleLogger>()
+                .Register(_ => container)       
+                .Register<IEasyNetQLogger, NullLogger>()
                 .Register<ISerializer, JsonSerializer>()
                 .Register<IConventions, Conventions>()
                 .Register<IEventBus, EventBus>()
                 .Register<ITypeNameSerializer, TypeNameSerializer>()
-                .Register<Func<string>>(x => CorrelationIdGenerator.GetCorrelationId)
-                .Register<IClusterHostSelectionStrategy<ConnectionFactoryInfo>, DefaultClusterHostSelectionStrategy<ConnectionFactoryInfo>>()
+                .Register<ICorrelationIdGenerationStrategy, DefaultCorrelationIdGenerationStrategy>()                
+                .Register<IMessageSerializationStrategy, DefaultMessageSerializationStrategy>()
+                .Register<IMessageDeliveryModeStrategy, MessageDeliveryModeStrategy>()
+                .Register<ITimeoutStrategy, TimeoutStrategy>()
+                .Register<IClusterHostSelectionStrategy<ConnectionFactoryInfo>, RandomClusterHostSelectionStrategy<ConnectionFactoryInfo>>()
+                .Register<IProduceConsumeInterceptor, DefaultInterceptor>()
                 .Register<IConsumerDispatcherFactory, ConsumerDispatcherFactory>()
                 .Register<IPublishExchangeDeclareStrategy, PublishExchangeDeclareStrategy>()
-                .Register<IPublisherConfirms, PublisherConfirms>()
+                .Register(sp => PublisherFactory.CreatePublisher(sp.Resolve<ConnectionConfiguration>(), sp.Resolve<IEasyNetQLogger>(), sp.Resolve<IEventBus>()))
                 .Register<IConsumerErrorStrategy, DefaultConsumerErrorStrategy>()
                 .Register<IHandlerRunner, HandlerRunner>()
                 .Register<IInternalConsumerFactory, InternalConsumerFactory>()
@@ -40,6 +45,7 @@ namespace EasyNetQ
                 .Register<IAdvancedBus, RabbitAdvancedBus>()
                 .Register<IRpc, Rpc>()
                 .Register<ISendReceive, SendReceive>()
+                .Register<IScheduler, ExternalScheduler>()
                 .Register<IBus, RabbitBus>();
         }
          

@@ -4,12 +4,11 @@ using System.Threading;
 using System.Threading.Tasks;
 using EasyNetQ.Consumer;
 using EasyNetQ.Events;
-using EasyNetQ.Loggers;
 using EasyNetQ.Tests.Mocking;
 using EasyNetQ.Topology;
 using NUnit.Framework;
 using RabbitMQ.Client;
-using RabbitMQ.Client.Framing.v0_9_1;
+using RabbitMQ.Client.Framing;
 using Rhino.Mocks;
 
 namespace EasyNetQ.Tests.ConsumeTests
@@ -23,6 +22,7 @@ namespace EasyNetQ.Tests.ConsumeTests
         protected MessageProperties DeliveredMessageProperties;
         protected MessageReceivedInfo DeliveredMessageInfo;
         protected bool ConsumerWasInvoked;
+        protected CancellationTokenSource Cancellation;
 
         // populated when a message is delivered
         protected IBasicProperties OriginalProperties;
@@ -32,8 +32,10 @@ namespace EasyNetQ.Tests.ConsumeTests
         [SetUp]
         protected void SetUp()
         {
-            ConsumerErrorStrategy = MockRepository.GenerateStub<IConsumerErrorStrategy>();
+            Cancellation = new CancellationTokenSource();
 
+            ConsumerErrorStrategy = MockRepository.GenerateStub<IConsumerErrorStrategy>();
+            
             IConventions conventions = new Conventions(new TypeNameSerializer())
                 {
                     ConsumerTagConvention = () => ConsumerTag
@@ -61,7 +63,7 @@ namespace EasyNetQ.Tests.ConsumeTests
 
                     handler(body, properties, messageInfo);
                     ConsumerWasInvoked = true;
-                }));
+                }, Cancellation.Token));
         }
 
         protected void DeliverMessage()
@@ -83,7 +85,15 @@ namespace EasyNetQ.Tests.ConsumeTests
                 OriginalBody
                 );
 
+            WaitForMessageDispatchToBegin();
             WaitForMessageDispatchToComplete();
+        }
+
+        private void WaitForMessageDispatchToBegin()
+        {
+            var autoResetEvent = new AutoResetEvent(false);
+            MockBuilder.EventBus.Subscribe<DeliveredMessageEvent>(x => autoResetEvent.Set());
+            autoResetEvent.WaitOne(1000);
         }
 
         protected void WaitForMessageDispatchToComplete()

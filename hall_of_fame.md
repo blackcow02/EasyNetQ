@@ -54,3 +54,6 @@ No particular order. Don't forget to add your name with your pull request.
 * Karl Nilsson
 * Mike Hadlow
 * Andrey Katamanov
+* Jeff Huntsman
+* Mathieu Leenhardt
+* Steven Bone

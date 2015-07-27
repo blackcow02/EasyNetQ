@@ -47,7 +47,7 @@ namespace EasyNetQ.Tests.Integration
         [Test, Explicit]
         public void DeclareWithTtlAndExpire()
         {
-            advancedBus.QueueDeclare("my_queue", perQueueTtl: 500, expires: 500);
+            advancedBus.QueueDeclare("my_queue", perQueueMessageTtl: 500, expires: 500);
         }
 
         [Test, Explicit]
@@ -65,6 +65,22 @@ namespace EasyNetQ.Tests.Integration
             var message = Encoding.UTF8.GetBytes("Some message");
             advancedBus.Publish(originalExchange, bindingKey, false, false, new MessageProperties(), message);
         }
+
+        [Test, Explicit]
+        public void DeclareDelayedExchange()
+        {
+            const string bindingKey = "the-binding-key";
+
+            var delayedExchange = advancedBus.ExchangeDeclare("delayed", ExchangeType.Direct, delayed: true);
+            var queue = advancedBus.QueueDeclare("my_queue");
+            advancedBus.Bind(delayedExchange, queue, bindingKey);
+
+            var message = Encoding.UTF8.GetBytes("Some message");
+            var messageProperties = new MessageProperties();
+            messageProperties.Headers.Add("x-delay", 5000);
+            advancedBus.Publish(delayedExchange, bindingKey, false, false, messageProperties, message);
+        }
+
 
         [Test, Explicit]
         public void ConsumeFromAQueue()
@@ -116,6 +132,47 @@ namespace EasyNetQ.Tests.Integration
                 new Message<MyMessage>(new MyMessage{ Text = "Wotcha!"}));
 
             Thread.Sleep(1000);
+        }
+
+        [Test, Explicit]
+        public void Should_be_able_to_get_a_message()
+        {
+            var queue = advancedBus.QueueDeclare("get_test");
+            advancedBus.Publish(Exchange.GetDefault(), "get_test", false, false,
+                new Message<MyMessage>(new MyMessage { Text = "Oh! Hello!" }));
+
+            var getResult = advancedBus.Get<MyMessage>(queue);
+
+            if (getResult.MessageAvailable)
+            {
+                Console.Out.WriteLine("Got message: {0}", getResult.Message.Body.Text);
+            }
+            else
+            {
+                Console.Out.WriteLine("Failed to get message!");
+            }
+        }
+
+        [Test, Explicit]
+        public void Should_set_MessageAvailable_to_false_when_queue_is_empty()
+        {
+            var queue = advancedBus.QueueDeclare("get_empty_queue_test");
+            var getResult = advancedBus.Get<MyMessage>(queue);
+
+            if (!getResult.MessageAvailable)
+            {
+                Console.Out.WriteLine("Failed to get message!");
+            }
+        }
+
+        [Test, Explicit]
+        public void Should_be_able_to_get_queue_length()
+        {
+            var queue = advancedBus.QueueDeclare("count_test");
+            advancedBus.Publish(Exchange.GetDefault(), "count_test", false, false,
+                new Message<MyMessage>(new MyMessage { Text = "Oh! Hello!" }));
+            uint messageCount = advancedBus.MessageCount(queue);
+            Console.WriteLine("{0} messages in queue", messageCount);
         }
     }
 }

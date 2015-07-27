@@ -26,6 +26,7 @@ namespace EasyNetQ.Consumer
         private readonly IEasyNetQLogger logger;
         private readonly IConventions conventions;
         private readonly ITypeNameSerializer typeNameSerializer;
+        private readonly object syncLock = new object();
 
         private IConnection connection;
         private bool errorQueueDeclared;
@@ -53,9 +54,41 @@ namespace EasyNetQ.Consumer
 
         private void Connect()
         {
-            if(connection == null || !connection.IsOpen)
+            if (connection == null || !connection.IsOpen)
             {
-                connection = connectionFactory.CreateConnection();
+                lock (syncLock)
+                {
+                    if (connection == null || !connection.IsOpen)
+                    {
+                        if (connection != null)
+                        {
+                            try
+                            {
+                                // when the broker connection is lost
+                                // and ShutdownReport.Count > 0 RabbitMQ.Client
+                                // throw an exception, but before the IConnection.Abort()
+                                // is invoked
+                                // https://github.com/rabbitmq/rabbitmq-dotnet-client/blob/ea913903602ba03841f2515c23f843304211cd9e/projects/client/RabbitMQ.Client/src/client/impl/Connection.cs#L1070
+                                connection.Dispose();
+                            }
+                            catch
+                            {
+                                if (connection.CloseReason != null)
+                                {
+                                    this.logger.InfoWrite("Connection '{0}' has shutdown. Reason: '{1}'", 
+                                        connection, connection.CloseReason.Cause);
+                                }
+                                else
+                                {
+                                    throw;
+                                }
+                            }
+
+                        }
+
+                        connection = connectionFactory.CreateConnection();
+                    }
+                }
             }
         }
 
@@ -92,7 +125,7 @@ namespace EasyNetQ.Consumer
             return DeclareErrorExchangeAndBindToDefaultErrorQueue(model, context);
         }
 
-        public virtual PostExceptionAckStrategy HandleConsumerError(ConsumerExecutionContext context, Exception exception)
+        public virtual AckStrategy HandleConsumerError(ConsumerExecutionContext context, Exception exception)
         {
             Preconditions.CheckNotNull(context, "context");
             Preconditions.CheckNotNull(exception, "exception");
@@ -132,7 +165,12 @@ namespace EasyNetQ.Consumer
                 logger.ErrorWrite("EasyNetQ Consumer Error Handler: Failed to publish error message\nException is:\n"
                     + unexpectedException);
             }
-            return Consumer.PostExceptionAckStrategy.ShouldAck;
+            return AckStrategies.Ack;
+        }
+
+        public AckStrategy HandleConsumerCancelled(ConsumerExecutionContext context)
+        {
+            return AckStrategies.Ack;
         }
 
         private byte[] CreateErrorMessage(ConsumerExecutionContext context, Exception exception)
@@ -144,7 +182,7 @@ namespace EasyNetQ.Consumer
                 Exchange = context.Info.Exchange,
                 Exception = exception.ToString(),
                 Message = messageAsString,
-                DateTime = DateTime.Now,
+                DateTime = DateTime.UtcNow,
                 BasicProperties = context.Properties
             };
 

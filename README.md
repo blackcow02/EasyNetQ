@@ -1,8 +1,13 @@
-![EasyNetQ Logo](https://raw.github.com/wiki/mikehadlow/EasyNetQ/images/logo_design_150.png)
+[![Stories in Ready](https://badge.waffle.io/easynetq/easynetq.svg?label=Ready&title=Ready)](http://waffle.io/easynetq/easynetq)
+[![Stories in Progress](https://badge.waffle.io/easynetq/easynetq.svg?label=In%20Progress&title=In%20Progress)](http://waffle.io/easynetq/easynetq)
+
+--
+
+![EasyNetQ Logo](https://github.com/EasyNetQ/EasyNetQ/wiki/images/logo_design_150.png)
 
 A Nice .NET API for RabbitMQ
 
-Development is sponsored by travel industry experts [15below](http://15below.com/)
+Initial development was sponsored by travel industry experts [15below](http://15below.com/)
 
 * **[Homepage](http://easynetq.com)**
 * **[Documentation](https://github.com/mikehadlow/EasyNetQ/wiki/Introduction)**

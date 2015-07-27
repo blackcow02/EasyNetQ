@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using RabbitMQ.Client;
-using RabbitMQ.Client.Framing.v0_9_1;
+using RabbitMQ.Client.Framing;
 using Rhino.Mocks;
 
 namespace EasyNetQ.Tests.Mocking
@@ -14,6 +14,7 @@ namespace EasyNetQ.Tests.Mocking
         readonly Stack<IModel> channelPool = new Stack<IModel>();
         readonly List<IBasicConsumer> consumers = new List<IBasicConsumer>(); 
         readonly IBasicProperties basicProperties = new BasicProperties();
+        readonly List<string> consumerQueueNames = new List<string>();
         private readonly IEasyNetQLogger logger = MockRepository.GenerateStub<IEasyNetQLogger>();
         private readonly IBus bus;
 
@@ -58,13 +59,15 @@ namespace EasyNetQ.Tests.Mocking
                     channels.Add(channel);
                     channel.Stub(x => x.CreateBasicProperties()).Return(basicProperties);
                     channel.Stub(x => x.IsOpen).Return(true);
-                    channel.Stub(x => x.BasicConsume(null, false, null, null, null))
+                    channel.Stub(x => x.BasicConsume(null, false, null, true, false, null, null))
                         .IgnoreArguments()
                         .WhenCalled(consumeInvokation =>
                         {
+                            var queueName = (string)consumeInvokation.Arguments[0];
                             var consumerTag = (string)consumeInvokation.Arguments[2];
-                            var consumer = (IBasicConsumer)consumeInvokation.Arguments[4];
+                            var consumer = (IBasicConsumer)consumeInvokation.Arguments[6];
 
+                            ConsumerQueueNames.Add(queueName);
                             consumer.HandleBasicConsumeOk(consumerTag);
                             consumers.Add(consumer);
                         }).Return("");
@@ -130,6 +133,11 @@ namespace EasyNetQ.Tests.Mocking
         public IEventBus EventBus
         {
             get { return ServiceProvider.Resolve<IEventBus>(); }
+        }
+
+        public List<string> ConsumerQueueNames
+        {
+            get { return consumerQueueNames; }
         }
     }
 }

@@ -7,7 +7,7 @@ using EasyNetQ.Events;
 using EasyNetQ.Tests.Mocking;
 using NUnit.Framework;
 using RabbitMQ.Client;
-using RabbitMQ.Client.Framing.v0_9_1;
+using RabbitMQ.Client.Framing;
 using Rhino.Mocks;
 
 namespace EasyNetQ.Tests
@@ -22,6 +22,8 @@ namespace EasyNetQ.Tests
         private const string queueName = typeName + "_" + subscriptionId;
         private const string consumerTag = "the_consumer_tag";
 
+        private ISubscriptionResult subscriptionResult; 
+
         [SetUp]
         public void SetUp()
         {
@@ -35,7 +37,7 @@ namespace EasyNetQ.Tests
                 //.Register<IEasyNetQLogger>(_ => new ConsoleLogger())
                 );
 
-            mockBuilder.Bus.Subscribe<MyMessage>(subscriptionId, message => { });
+            subscriptionResult = mockBuilder.Bus.Subscribe<MyMessage>(subscriptionId, message => { });
         }
 
         [Test]
@@ -51,7 +53,7 @@ namespace EasyNetQ.Tests
         {
             mockBuilder.Channels[0].AssertWasCalled(x =>
                 x.QueueDeclare(
-                    Arg<string>.Is.Equal(queueName), 
+                    Arg<string>.Is.Equal(queueName),
                     Arg<bool>.Is.Equal(true),  // durable
                     Arg<bool>.Is.Equal(false), // exclusive
                     Arg<bool>.Is.Equal(false), // autoDelete
@@ -81,11 +83,13 @@ namespace EasyNetQ.Tests
         [Test]
         public void Should_start_consuming()
         {
-            mockBuilder.Channels[1].AssertWasCalled(x => 
+            mockBuilder.Channels[1].AssertWasCalled(x =>
                 x.BasicConsume(
                     Arg<string>.Is.Equal(queueName),
                     Arg<bool>.Is.Equal(false),
                     Arg<string>.Is.Anything,
+                    Arg<bool>.Is.Equal(true),
+                    Arg<bool>.Is.Equal(false),
                     Arg<IDictionary<string, object>>.Is.Anything,
                     Arg<IBasicConsumer>.Is.Anything));
         }
@@ -94,6 +98,17 @@ namespace EasyNetQ.Tests
         public void Should_register_consumer()
         {
             mockBuilder.Consumers.Count.ShouldEqual(1);
+        }
+
+        [Test]
+        public void Should_return_non_null_and_with_expected_values_result()
+        {
+            Assert.IsNotNull(subscriptionResult);
+            Assert.IsNotNull(subscriptionResult.Exchange);
+            Assert.IsNotNull(subscriptionResult.Queue);
+            Assert.IsNotNull(subscriptionResult.ConsumerCancellation);
+            Assert.IsTrue(subscriptionResult.Exchange.Name == typeName);
+            Assert.IsTrue(subscriptionResult.Queue.Name == queueName);
         }
     }
 
@@ -177,8 +192,8 @@ namespace EasyNetQ.Tests
         [Test]
         public void Should_write_debug_message()
         {
-            const string expectedMessageFormat = 
-                "Recieved \n\tRoutingKey: '{0}'\n\tCorrelationId: '{1}'\n\tConsumerTag: '{2}'" +
+            const string expectedMessageFormat =
+                "Received \n\tRoutingKey: '{0}'\n\tCorrelationId: '{1}'\n\tConsumerTag: '{2}'" +
                 "\n\tDeliveryTag: {3}\n\tRedelivered: {4}";
 
             mockBuilder.Logger.AssertWasCalled(
@@ -218,7 +233,7 @@ namespace EasyNetQ.Tests
                 {
                     basicDeliverEventArgs = (ConsumerExecutionContext)i.Arguments[0];
                     raisedException = (Exception) i.Arguments[1];
-                }).Return(PostExceptionAckStrategy.ShouldAck); 
+                }).Return(AckStrategies.Ack);
 
             mockBuilder = new MockBuilder(x => x
                 .Register<IConventions>(_ => conventions)
@@ -273,7 +288,7 @@ namespace EasyNetQ.Tests
         [Test]
         public void Should_invoke_the_consumer_error_strategy()
         {
-            consumerErrorStrategy.AssertWasCalled(x => 
+            consumerErrorStrategy.AssertWasCalled(x =>
                 x.HandleConsumerError(Arg<ConsumerExecutionContext>.Is.Anything, Arg<Exception>.Is.Anything));
         }
 
@@ -292,6 +307,36 @@ namespace EasyNetQ.Tests
             basicDeliverEventArgs.Info.ConsumerTag.ShouldEqual(consumerTag);
             basicDeliverEventArgs.Info.DeliverTag.ShouldEqual(deliveryTag);
             basicDeliverEventArgs.Info.RoutingKey.ShouldEqual("#");
+        }
+    }
+
+    [TestFixture]
+    public class When_a_subscription_is_cancelled_by_the_user
+    {
+        private MockBuilder mockBuilder;
+        private const string subscriptionId = "the_subscription_id";
+        private const string consumerTag = "the_consumer_tag";
+
+        [SetUp]
+        public void SetUp()
+        {
+            var conventions = new Conventions(new TypeNameSerializer())
+            {
+                ConsumerTagConvention = () => consumerTag
+            };
+
+            mockBuilder = new MockBuilder(x => x.Register<IConventions>(_ => conventions));
+            var subscriptionResult = mockBuilder.Bus.Subscribe<MyMessage>(subscriptionId, message => { });
+             var are = new AutoResetEvent(false);
+            mockBuilder.EventBus.Subscribe<ConsumerModelDisposedEvent>(x => are.Set());
+            subscriptionResult.Dispose();
+            are.WaitOne(500);
+        }
+
+        [Test]
+        public void Should_dispose_the_model()
+        {
+            mockBuilder.Consumers[0].Model.AssertWasCalled(x => x.Dispose());
         }
     }
 }

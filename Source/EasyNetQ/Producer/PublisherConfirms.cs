@@ -18,23 +18,19 @@ namespace EasyNetQ.Producer
     /// Note, this class is designed to be called sequentially from a single thread. It is NOT
     /// thread safe.
     /// </summary>
-    public class PublisherConfirms : IPublisherConfirms
+    public class PublisherConfirms : PublisherBase
     {
-        private readonly IConnectionConfiguration configuration;
         private readonly IEasyNetQLogger logger;
-        private readonly IDictionary<ulong, ConfirmActions> dictionary = 
-            new ConcurrentDictionary<ulong, ConfirmActions>();
+        private readonly IDictionary<ulong, ConfirmActions> dictionary = new ConcurrentDictionary<ulong, ConfirmActions>();
 
-        private IModel cachedModel;
         private readonly int timeoutSeconds;
 
-        public PublisherConfirms(IConnectionConfiguration configuration, IEasyNetQLogger logger, IEventBus eventBus)
+        public PublisherConfirms(ConnectionConfiguration configuration, IEasyNetQLogger logger, IEventBus eventBus) : base (eventBus)
         {
             Preconditions.CheckNotNull(configuration, "configuration");
             Preconditions.CheckNotNull(logger, "logger");
             Preconditions.CheckNotNull(eventBus, "eventBus");
 
-            this.configuration = configuration;
             timeoutSeconds = configuration.Timeout;
             this.logger = logger;
 
@@ -43,14 +39,14 @@ namespace EasyNetQ.Producer
 
         private void OnPublishChannelCreated(PublishChannelCreatedEvent publishChannelCreatedEvent)
         {
-            Preconditions.CheckNotNull(publishChannelCreatedEvent.Channel, "model");
+            Preconditions.CheckNotNull(publishChannelCreatedEvent.Channel, "oldModel");
 
             var outstandingConfirms = new List<ConfirmActions>(dictionary.Values);
 
             foreach (var outstandingConfirm in outstandingConfirms)
             {
                 outstandingConfirm.Cancel();
-                PublishWithConfirmInternal(
+                ExecutePublishWithConfirmation(
                     publishChannelCreatedEvent.Channel,
                     outstandingConfirm.PublishAction,
                     outstandingConfirm.TaskCompletionSource);
@@ -58,39 +54,35 @@ namespace EasyNetQ.Producer
             
         }
 
-        private void SetModel(IModel model)
+        protected override void OnChannelOpened(IModel newModel)
         {
-            // we only need to set up the channel once, but the persistent channel can change
-            // the IModel instance underneath us, so check on each publish.
-            if (cachedModel == model) return;
-
-            if (cachedModel != null)
-            {
-                // the old model has been closed and we're now using a new model, so remove
-                // any existing callback entries in the dictionary
-                dictionary.Clear();
-
-                cachedModel.BasicAcks -= ModelOnBasicAcks;
-                cachedModel.BasicNacks -= ModelOnBasicNacks;
-            }
-
-            cachedModel = model;
-
             // switch channel to confirms mode.
-            model.ConfirmSelect();
+            newModel.ConfirmSelect();
 
-            model.BasicAcks += ModelOnBasicAcks;
-            model.BasicNacks += ModelOnBasicNacks;
+            newModel.BasicAcks += ModelOnBasicAcks;
+            newModel.BasicNacks += ModelOnBasicNacks;
+            base.OnChannelOpened(newModel);
         }
 
-        private void ModelOnBasicNacks(IModel model, BasicNackEventArgs args)
+        protected override void OnChannelClosed(IModel oldModel)
         {
-            HandleConfirm(args.DeliveryTag, args.Multiple, x => x.OnNack());
+            // the old model has been closed and we're now using a new model, so remove
+            // any existing callback entries in the dictionary
+            dictionary.Clear();
+
+            oldModel.BasicAcks -= ModelOnBasicAcks;
+            oldModel.BasicNacks -= ModelOnBasicNacks;
+            base.OnChannelClosed(oldModel);
         }
 
-        private void ModelOnBasicAcks(IModel model, BasicAckEventArgs args)
+        private void ModelOnBasicNacks(object model, BasicNackEventArgs e)
         {
-            HandleConfirm(args.DeliveryTag, args.Multiple, x => x.OnAck());
+            HandleConfirm(e.DeliveryTag, e.Multiple, x => x.OnNack());
+        }
+
+        private void ModelOnBasicAcks(object model, BasicAckEventArgs e)
+        {
+            HandleConfirm(e.DeliveryTag, e.Multiple, x => x.OnAck());
         }
 
         private void HandleConfirm(ulong sequenceNumber, bool multiple, Action<ConfirmActions> confirmAction)
@@ -115,19 +107,14 @@ namespace EasyNetQ.Producer
 
         }
 
-        public Task PublishWithConfirm(IModel model, Action<IModel> publishAction)
+        public override Task PublishAsync(IModel model, Action<IModel> publishAction)
         {
             var tcs = new TaskCompletionSource<NullStruct>();
-            return PublishWithConfirmInternal(model, publishAction, tcs);
+            return ExecutePublishWithConfirmation(model, publishAction, tcs);
         }
 
-        private Task PublishWithConfirmInternal(IModel model, Action<IModel> publishAction, TaskCompletionSource<NullStruct> tcs)
+        private Task ExecutePublishWithConfirmation(IModel model, Action<IModel> publishAction, TaskCompletionSource<NullStruct> tcs)
         {
-            if (!configuration.PublisherConfirms)
-            {
-                return ExecutePublishActionDirectly(model, publishAction);
-            }
-
             SetModel(model);
 
             var sequenceNumber = model.NextPublishSeqNo;
@@ -139,7 +126,7 @@ namespace EasyNetQ.Producer
             timer = new Timer(state =>
                 {
                     var set = tcs.TrySetException(new TimeoutException(string.Format(
-                        "Publisher confirms timed out after {0} seconds " + 
+                        "Publisher confirms timed out after {0} seconds " +
                         "waiting for ACK or NACK from sequence number {1}",
                         timeoutSeconds, sequenceNumber)));
 
@@ -147,7 +134,7 @@ namespace EasyNetQ.Producer
                     this.logger.ErrorWrite("Publish timed out. Sequence number: {0}", sequenceNumber);
                     this.dictionary.Remove(sequenceNumber);
                     timer.Dispose();
-                }, null, timeoutSeconds * 1000, Timeout.Infinite);
+                }, null, timeoutSeconds*1000, Timeout.Infinite);
 
             dictionary.Add(sequenceNumber, new ConfirmActions
                 {
@@ -163,31 +150,35 @@ namespace EasyNetQ.Producer
                         {
                             timer.Dispose();
                             logger.ErrorWrite("Publish was nacked by broker. Sequence number: {0}", sequenceNumber);
-                            Task.Factory.StartNew(() => tcs.TrySetException(new PublishNackedException(string.Format("Broker has signalled that publish {0} was unsuccessful", sequenceNumber))));
+                            Task.Factory.StartNew(
+                                () =>
+                                tcs.TrySetException(
+                                    new PublishNackedException(
+                                        string.Format("Broker has signalled that publish {0} was unsuccessful", sequenceNumber))));
                         },
-
                     Cancel = () => timer.Dispose(),
-
                     PublishAction = publishAction,
-
                     TaskCompletionSource = tcs
                 });
 
-            publishAction(model);
+            try
+            {
+                //execute publish
+                publishAction(model);
+            }
+            catch(Exception ex)
+            {
+                //return fault when publish action can't be executed
+                logger.ErrorWrite("Publish Failed. Sequence number: {0}. Exception: {1}", sequenceNumber, ex);
+                timer.Dispose();
+                dictionary.Remove(sequenceNumber);
+                tcs.TrySetException(ex);
+            }
+            
 
             return tcs.Task;
         }
-
-        private Task ExecutePublishActionDirectly(IModel model, Action<IModel> publishAction)
-        {
-            var tcs = new TaskCompletionSource<NullStruct>();
-            publishAction(model);
-            tcs.SetResult(new NullStruct());
-            return tcs.Task;
-        }
-
-        private struct NullStruct { }
-
+        
         private class ConfirmActions
         {
             public Action OnAck { get; set; }

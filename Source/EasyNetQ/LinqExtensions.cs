@@ -1,7 +1,5 @@
 ﻿using System;
-using System.Collections;
 using System.Collections.Generic;
-using System.Linq;
 
 namespace EasyNetQ
 {
@@ -22,12 +20,6 @@ namespace EasyNetQ
             }
         }
 
-        public static IEnumerable<KeyValuePair<string, string>> EnumerateDictionary(this IDictionary<string, object> dictionary)
-        {
-            return from KeyValuePair<string, object> entry in dictionary 
-                   select new KeyValuePair<string, string>(entry.Key, entry.Value.ToString());
-        }
-
         public static IEnumerable<T> SurroundWith<T>(this IEnumerable<T> items, T first, T last)
         {
             yield return first;
@@ -36,20 +28,6 @@ namespace EasyNetQ
                 yield return item;
             }
             yield return last;
-        }
-
-        public static IEnumerable<T> AtLeastOneWithDefault<T>(this IEnumerable<T> items, T @default)
-        {
-            var zeroItems = true;
-            foreach (var item in items)
-            {
-                yield return item;
-                zeroItems = false;
-            }
-            if (zeroItems)
-            {
-                yield return @default;
-            }
         }
 
         public static void Shuffle<T>(this IList<T> list)

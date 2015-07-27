@@ -1,6 +1,5 @@
 ﻿// ReSharper disable InconsistentNaming
 
-using System;
 using System.Linq;
 using EasyNetQ.ConnectionString;
 using NUnit.Framework;
@@ -13,9 +12,9 @@ namespace EasyNetQ.Tests
         const string connectionStringValue =
             "host=192.168.1.1:1001,my.little.host:1002;virtualHost=Copa;username=Copa;" + 
             "password=abc_xyz;port=12345;requestedHeartbeat=3";
-        private IConnectionConfiguration connectionString;
+        private ConnectionConfiguration connectionString;
 
-        private IConnectionConfiguration defaults;
+        private ConnectionConfiguration defaults;
 
         [SetUp]
         public void SetUp()

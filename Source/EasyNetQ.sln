@@ -1,7 +1,7 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio 2013
-VisualStudioVersion = 12.0.30110.0
+VisualStudioVersion = 12.0.31101.0
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "EasyNetQ", "EasyNetQ\EasyNetQ.csproj", "{B8DEF709-5168-48F1-B8D3-AD44E4A4A22B}"
 EndProject
@@ -15,7 +15,6 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution 
 		..\Package\EasyNetQ.DI.Ninject\EasyNetQ.DI.Ninject.nuspec = ..\Package\EasyNetQ.DI.Ninject\EasyNetQ.DI.Ninject.nuspec
 		..\Package\EasyNetQ.DI.StructureMap\EasyNetQ.DI.StructureMap.nuspec = ..\Package\EasyNetQ.DI.StructureMap\EasyNetQ.DI.StructureMap.nuspec
 		..\Package\EasyNetQ.DI.Windsor\EasyNetQ.DI.Windsor.nuspec = ..\Package\EasyNetQ.DI.Windsor\EasyNetQ.DI.Windsor.nuspec
-		..\Package\EasyNetQ.Management.Client\EasyNetQ.Management.Client.nuspec = ..\Package\EasyNetQ.Management.Client\EasyNetQ.Management.Client.nuspec
 		..\Package\EasyNetQ\EasyNetQ.nuspec = ..\Package\EasyNetQ\EasyNetQ.nuspec
 		..\Build\EasyNetQ.proj = ..\Build\EasyNetQ.proj
 		..\hall_of_fame.md = ..\hall_of_fame.md
@@ -47,10 +46,6 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "EasyNetQ.Scheduler", "EasyN
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "EasyNetQ.Tests.SimpleRequester", "EasyNetQ.Tests.SimpleRequester\EasyNetQ.Tests.SimpleRequester.csproj", "{5EDAA7BF-CD00-440C-9697-D24F7B37CFFA}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "EasyNetQ.Management.Client", "EasyNetQ.Management.Client\EasyNetQ.Management.Client.csproj", "{9888950B-EF30-4763-9076-38B071CDB535}"
-EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "EasyNetQ.Management.Client.Tests", "EasyNetQ.Management.Client.Tests\EasyNetQ.Management.Client.Tests.csproj", "{F411090D-1CAB-4726-9F2B-582E9D9D80D7}"
-EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "EasyNetQ.Trace", "EasyNetQ.Trace\EasyNetQ.Trace.csproj", "{11DF08A9-3D14-44CC-A65E-5933121D3D63}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "EasyNetQ.DI.StructureMap", "EasyNetQ.DI.StructureMap\EasyNetQ.DI.StructureMap.csproj", "{54E2EEA9-D56E-4EEF-9521-B0C5D3B1ED2F}"
@@ -74,6 +69,7 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "mssql", "mssql", "{F11F4058
 	ProjectSection(SolutionItems) = preProject
 		..\DatabaseScripts\EasyNetQ.Scheduler\mssql\CreateWorkTables.sql = ..\DatabaseScripts\EasyNetQ.Scheduler\mssql\CreateWorkTables.sql
 		..\DatabaseScripts\EasyNetQ.Scheduler\mssql\uspAddNewMessageToSchedule.sql = ..\DatabaseScripts\EasyNetQ.Scheduler\mssql\uspAddNewMessageToSchedule.sql
+		..\DatabaseScripts\EasyNetQ.Scheduler\mssql\uspCancelScheduledMessages.sql = ..\DatabaseScripts\EasyNetQ.Scheduler\mssql\uspCancelScheduledMessages.sql
 		..\DatabaseScripts\EasyNetQ.Scheduler\mssql\uspGetNextBatchOfMessages.sql = ..\DatabaseScripts\EasyNetQ.Scheduler\mssql\uspGetNextBatchOfMessages.sql
 		..\DatabaseScripts\EasyNetQ.Scheduler\mssql\uspMarkWorkItemForPurge.sql = ..\DatabaseScripts\EasyNetQ.Scheduler\mssql\uspMarkWorkItemForPurge.sql
 		..\DatabaseScripts\EasyNetQ.Scheduler\mssql\uspWorkItemsSelfPurge.sql = ..\DatabaseScripts\EasyNetQ.Scheduler\mssql\uspWorkItemsSelfPurge.sql
@@ -83,10 +79,17 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "postgres", "postgres", "{CD
 	ProjectSection(SolutionItems) = preProject
 		..\DatabaseScripts\EasyNetQ.Scheduler\postgres\CreateWorkTables.sql = ..\DatabaseScripts\EasyNetQ.Scheduler\postgres\CreateWorkTables.sql
 		..\DatabaseScripts\EasyNetQ.Scheduler\postgres\uspAddNewMessageToSchedule.sql = ..\DatabaseScripts\EasyNetQ.Scheduler\postgres\uspAddNewMessageToSchedule.sql
+		..\DatabaseScripts\EasyNetQ.Scheduler\postgres\uspCancelScheduledMessages.sql = ..\DatabaseScripts\EasyNetQ.Scheduler\postgres\uspCancelScheduledMessages.sql
 		..\DatabaseScripts\EasyNetQ.Scheduler\postgres\uspGetNextBatchOfMessages.sql = ..\DatabaseScripts\EasyNetQ.Scheduler\postgres\uspGetNextBatchOfMessages.sql
 		..\DatabaseScripts\EasyNetQ.Scheduler\postgres\uspMarkWorkItemForPurge.sql = ..\DatabaseScripts\EasyNetQ.Scheduler\postgres\uspMarkWorkItemForPurge.sql
 		..\DatabaseScripts\EasyNetQ.Scheduler\postgres\uspWorkItemsSelfPurge.sql = ..\DatabaseScripts\EasyNetQ.Scheduler\postgres\uspWorkItemsSelfPurge.sql
 	EndProjectSection
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "EasyNetQ.Scheduler.Mongo.Core", "EasyNetQ.Scheduler.Mongo.Core\EasyNetQ.Scheduler.Mongo.Core.csproj", "{F444E58F-DA2A-47E8-8246-C4BDD9A192B2}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "EasyNetQ.Scheduler.Mongo", "EasyNetQ.Scheduler.Mongo\EasyNetQ.Scheduler.Mongo.csproj", "{AFD272B4-4A2B-43D4-81ED-666F8918FD01}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "EasyNetQ.Scheduler.Mongo.Tests", "EasyNetQ.Scheduler.Mongo.Tests\EasyNetQ.Scheduler.Mongo.Tests.csproj", "{4E7F926F-D939-4962-A7EF-112DE41B4236}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -228,26 +231,6 @@ Global
 		{5EDAA7BF-CD00-440C-9697-D24F7B37CFFA}.Release|Mixed Platforms.ActiveCfg = Release|Any CPU
 		{5EDAA7BF-CD00-440C-9697-D24F7B37CFFA}.Release|Mixed Platforms.Build.0 = Release|Any CPU
 		{5EDAA7BF-CD00-440C-9697-D24F7B37CFFA}.Release|x86.ActiveCfg = Release|Any CPU
-		{9888950B-EF30-4763-9076-38B071CDB535}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{9888950B-EF30-4763-9076-38B071CDB535}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{9888950B-EF30-4763-9076-38B071CDB535}.Debug|Mixed Platforms.ActiveCfg = Debug|Any CPU
-		{9888950B-EF30-4763-9076-38B071CDB535}.Debug|Mixed Platforms.Build.0 = Debug|Any CPU
-		{9888950B-EF30-4763-9076-38B071CDB535}.Debug|x86.ActiveCfg = Debug|Any CPU
-		{9888950B-EF30-4763-9076-38B071CDB535}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{9888950B-EF30-4763-9076-38B071CDB535}.Release|Any CPU.Build.0 = Release|Any CPU
-		{9888950B-EF30-4763-9076-38B071CDB535}.Release|Mixed Platforms.ActiveCfg = Release|Any CPU
-		{9888950B-EF30-4763-9076-38B071CDB535}.Release|Mixed Platforms.Build.0 = Release|Any CPU
-		{9888950B-EF30-4763-9076-38B071CDB535}.Release|x86.ActiveCfg = Release|Any CPU
-		{F411090D-1CAB-4726-9F2B-582E9D9D80D7}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{F411090D-1CAB-4726-9F2B-582E9D9D80D7}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{F411090D-1CAB-4726-9F2B-582E9D9D80D7}.Debug|Mixed Platforms.ActiveCfg = Debug|Any CPU
-		{F411090D-1CAB-4726-9F2B-582E9D9D80D7}.Debug|Mixed Platforms.Build.0 = Debug|Any CPU
-		{F411090D-1CAB-4726-9F2B-582E9D9D80D7}.Debug|x86.ActiveCfg = Debug|Any CPU
-		{F411090D-1CAB-4726-9F2B-582E9D9D80D7}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{F411090D-1CAB-4726-9F2B-582E9D9D80D7}.Release|Any CPU.Build.0 = Release|Any CPU
-		{F411090D-1CAB-4726-9F2B-582E9D9D80D7}.Release|Mixed Platforms.ActiveCfg = Release|Any CPU
-		{F411090D-1CAB-4726-9F2B-582E9D9D80D7}.Release|Mixed Platforms.Build.0 = Release|Any CPU
-		{F411090D-1CAB-4726-9F2B-582E9D9D80D7}.Release|x86.ActiveCfg = Release|Any CPU
 		{11DF08A9-3D14-44CC-A65E-5933121D3D63}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{11DF08A9-3D14-44CC-A65E-5933121D3D63}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{11DF08A9-3D14-44CC-A65E-5933121D3D63}.Debug|Mixed Platforms.ActiveCfg = Debug|Any CPU
@@ -308,6 +291,36 @@ Global
 		{74FB0A3D-2C72-462C-B498-15C0AE615D35}.Release|Mixed Platforms.ActiveCfg = Release|Any CPU
 		{74FB0A3D-2C72-462C-B498-15C0AE615D35}.Release|Mixed Platforms.Build.0 = Release|Any CPU
 		{74FB0A3D-2C72-462C-B498-15C0AE615D35}.Release|x86.ActiveCfg = Release|Any CPU
+		{F444E58F-DA2A-47E8-8246-C4BDD9A192B2}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{F444E58F-DA2A-47E8-8246-C4BDD9A192B2}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{F444E58F-DA2A-47E8-8246-C4BDD9A192B2}.Debug|Mixed Platforms.ActiveCfg = Debug|Any CPU
+		{F444E58F-DA2A-47E8-8246-C4BDD9A192B2}.Debug|Mixed Platforms.Build.0 = Debug|Any CPU
+		{F444E58F-DA2A-47E8-8246-C4BDD9A192B2}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{F444E58F-DA2A-47E8-8246-C4BDD9A192B2}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{F444E58F-DA2A-47E8-8246-C4BDD9A192B2}.Release|Any CPU.Build.0 = Release|Any CPU
+		{F444E58F-DA2A-47E8-8246-C4BDD9A192B2}.Release|Mixed Platforms.ActiveCfg = Release|Any CPU
+		{F444E58F-DA2A-47E8-8246-C4BDD9A192B2}.Release|Mixed Platforms.Build.0 = Release|Any CPU
+		{F444E58F-DA2A-47E8-8246-C4BDD9A192B2}.Release|x86.ActiveCfg = Release|Any CPU
+		{AFD272B4-4A2B-43D4-81ED-666F8918FD01}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{AFD272B4-4A2B-43D4-81ED-666F8918FD01}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{AFD272B4-4A2B-43D4-81ED-666F8918FD01}.Debug|Mixed Platforms.ActiveCfg = Debug|Any CPU
+		{AFD272B4-4A2B-43D4-81ED-666F8918FD01}.Debug|Mixed Platforms.Build.0 = Debug|Any CPU
+		{AFD272B4-4A2B-43D4-81ED-666F8918FD01}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{AFD272B4-4A2B-43D4-81ED-666F8918FD01}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{AFD272B4-4A2B-43D4-81ED-666F8918FD01}.Release|Any CPU.Build.0 = Release|Any CPU
+		{AFD272B4-4A2B-43D4-81ED-666F8918FD01}.Release|Mixed Platforms.ActiveCfg = Release|Any CPU
+		{AFD272B4-4A2B-43D4-81ED-666F8918FD01}.Release|Mixed Platforms.Build.0 = Release|Any CPU
+		{AFD272B4-4A2B-43D4-81ED-666F8918FD01}.Release|x86.ActiveCfg = Release|Any CPU
+		{4E7F926F-D939-4962-A7EF-112DE41B4236}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{4E7F926F-D939-4962-A7EF-112DE41B4236}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{4E7F926F-D939-4962-A7EF-112DE41B4236}.Debug|Mixed Platforms.ActiveCfg = Debug|Any CPU
+		{4E7F926F-D939-4962-A7EF-112DE41B4236}.Debug|Mixed Platforms.Build.0 = Debug|Any CPU
+		{4E7F926F-D939-4962-A7EF-112DE41B4236}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{4E7F926F-D939-4962-A7EF-112DE41B4236}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{4E7F926F-D939-4962-A7EF-112DE41B4236}.Release|Any CPU.Build.0 = Release|Any CPU
+		{4E7F926F-D939-4962-A7EF-112DE41B4236}.Release|Mixed Platforms.ActiveCfg = Release|Any CPU
+		{4E7F926F-D939-4962-A7EF-112DE41B4236}.Release|Mixed Platforms.Build.0 = Release|Any CPU
+		{4E7F926F-D939-4962-A7EF-112DE41B4236}.Release|x86.ActiveCfg = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

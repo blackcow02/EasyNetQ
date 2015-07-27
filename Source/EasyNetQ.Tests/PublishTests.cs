@@ -1,7 +1,8 @@
 ﻿// ReSharper disable InconsistentNaming
 
-using System;
 using System.Text;
+using System.Threading;
+using EasyNetQ.Events;
 using EasyNetQ.Tests.Mocking;
 using NUnit.Framework;
 using RabbitMQ.Client;
@@ -13,7 +14,7 @@ namespace EasyNetQ.Tests
     public class When_publish_is_called
     {
         private const string correlationId = "abc123";
-
+        
         private MockBuilder mockBuilder;
         byte[] body;
         private IBasicProperties properties;
@@ -22,7 +23,7 @@ namespace EasyNetQ.Tests
         public void SetUp()
         {
             mockBuilder = new MockBuilder(x => 
-                x.Register<Func<string>>(_ => () => correlationId));
+                x.Register<ICorrelationIdGenerationStrategy>(_ => new StaticCorrelationIdGenerationStrategy(correlationId)));
 
             mockBuilder.NextModel.Stub(x =>
                 x.BasicPublish(null, null, false, false, null, null))
@@ -36,6 +37,14 @@ namespace EasyNetQ.Tests
 
             var message = new MyMessage { Text = "Hiya!" };
             mockBuilder.Bus.Publish(message);
+            WaitForMessageToPublish();
+        }
+
+        private void WaitForMessageToPublish()
+        {
+            var autoResetEvent = new AutoResetEvent(false);
+            mockBuilder.EventBus.Subscribe<PublishedMessageEvent>(x => autoResetEvent.Set());
+            autoResetEvent.WaitOne(1000);
         }
 
         [Test]
@@ -109,6 +118,14 @@ namespace EasyNetQ.Tests
 
             var message = new MyMessage { Text = "Hiya!" };
             mockBuilder.Bus.Publish(message, "X.A");
+            WaitForMessageToPublish();
+        }
+
+        private void WaitForMessageToPublish()
+        {
+            var autoResetEvent = new AutoResetEvent(false);
+            mockBuilder.EventBus.Subscribe<PublishedMessageEvent>(x => autoResetEvent.Set());
+            autoResetEvent.WaitOne(1000);
         }
 
         [Test]

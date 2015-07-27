@@ -4,7 +4,6 @@ using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using EasyNetQ.Consumer;
-using EasyNetQ.Loggers;
 using EasyNetQ.Tests.Mocking;
 using EasyNetQ.Topology;
 using NUnit.Framework;
@@ -51,7 +50,7 @@ namespace EasyNetQ.Tests.PersistentConsumerTests
                     createConsumerCalled++;
                     x.ReturnValue = internalConsumer;
                 }).Repeat.Any();
-            configuration = new ConsumerConfiguration();
+            configuration = new ConsumerConfiguration(0);
             consumer = new PersistentConsumer(
                 queue,
                 onMessage,

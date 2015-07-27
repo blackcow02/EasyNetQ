@@ -1,4 +1,4 @@
-﻿using System;
+﻿﻿using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 
@@ -15,38 +15,68 @@ namespace EasyNetQ
 
     public class EventBus : IEventBus
     {
-        private readonly ConcurrentDictionary<Type, IList<object>> subscriptions = 
-            new ConcurrentDictionary<Type, IList<object>>();
+        private class Handlers
+        {
+            private readonly object internalHandlersLock = new object();
+            private readonly List<object> internalHandlers = new List<object>(); 
+
+            public void Add(object handler)
+            {
+                lock (internalHandlersLock)
+                    internalHandlers.Add(handler);
+            }
+
+            public void Remove(object handler)
+            {
+                lock (internalHandlersLock)
+                    internalHandlers.Remove(handler);
+            }
+
+            public IEnumerable<object> AsEnumerable()
+            {
+                lock (internalHandlersLock)
+                    return internalHandlers.ToArray();
+            }
+        }
+
+        private readonly ConcurrentDictionary<Type, Handlers> subscriptions = new ConcurrentDictionary<Type, Handlers>();
+        private readonly object subscriptionLock = new object();
 
         public void Publish<TEvent>(TEvent @event)
         {
-            if (!subscriptions.ContainsKey(typeof (TEvent))) return;
-            foreach (var eventHandler in subscriptions[typeof(TEvent)])
-            {
-                ((Action<TEvent>) eventHandler)(@event);
-            }
+            Handlers handlers;
+            if (!subscriptions.TryGetValue(typeof (TEvent), out handlers))
+                return;
+            foreach (var handler in handlers.AsEnumerable())
+                ((Action<TEvent>) handler)(@event);
         }
 
         public CancelSubscription Subscribe<TEvent>(Action<TEvent> eventHandler)
         {
-            CancelSubscription cancelSubscription = null;
+            AddSubscription(eventHandler);
+            return GetCancelSubscriptionDelegate(eventHandler);
+        }
 
-            subscriptions.AddOrUpdate(typeof(TEvent),
-                    t =>
-                    {
-                        var l = new List<object> {eventHandler};
-                        cancelSubscription = () => l.Remove(eventHandler);
-                        return l;
-                    },
-                    (t, l) =>
-                    {
-                        l.Add(eventHandler);
-                        cancelSubscription = () => l.Remove(eventHandler);
-                        return l;
-                    }
-                );
+        private void AddSubscription<TEvent>(Action<TEvent> handler)
+        {
+            var type = typeof (TEvent);
+            Handlers handlers;
+            if (!subscriptions.TryGetValue(type, out handlers))
+                lock (subscriptionLock)
+                    if (!subscriptions.TryGetValue(type, out handlers))
+                        subscriptions[type] = handlers = new Handlers();
+            handlers.Add(handler);
+        }
 
-            return cancelSubscription;
+        private CancelSubscription GetCancelSubscriptionDelegate<TEvent>(Action<TEvent> eventHandler)
+        {
+            return () =>
+                {
+                    Handlers handlers;
+                    if (!subscriptions.TryGetValue(typeof (TEvent), out handlers))
+                        return;
+                    handlers.Remove(eventHandler);
+                };
         }
     }
 
